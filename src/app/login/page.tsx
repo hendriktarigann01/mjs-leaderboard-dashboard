@@ -40,10 +40,9 @@ export default function LoginPage() {
         document.cookie =
           "mjs_admin_session=authenticated_mjs_admin; path=/; max-age=86400; SameSite=Strict";
         localStorage.setItem("mjs_admin_session", "authenticated_mjs_admin");
-
         router.replace("/");
       } else {
-        setError("Kata sandi admin tidak valid!");
+        setError("Invalid admin password!");
         setIsLoading(false);
       }
     }, 800);
@@ -79,7 +78,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-xs font-semibold text-[#AB7FEB] uppercase tracking-wider mb-2">
-                Kata Sandi Admin
+                Admin Password
               </label>
 
               <div className="relative">
@@ -92,7 +91,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan kata sandi..."
+                  placeholder="Enter password..."
                   className="block w-full pl-11 pr-11 py-3.5 bg-black/40 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#540EE1] focus:border-transparent transition-all duration-300 text-sm font-mono tracking-widest"
                 />
 
@@ -125,7 +124,7 @@ export default function LoginPage() {
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                "Masuk Dashboard"
+                "Enter Dashboard"
               )}
             </button>
           </form>

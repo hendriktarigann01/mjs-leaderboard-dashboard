@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
-  Trophy,
   Calendar,
   Gamepad2,
   Download,
@@ -17,6 +17,7 @@ import {
   Flame,
   AlertCircle,
   HelpCircle,
+  Trophy,
 } from "lucide-react";
 import {
   fetchLeaderboardData,
@@ -27,18 +28,11 @@ import {
 } from "@/lib/dataService";
 import { motion } from "framer-motion";
 
-// Game options definition
 const GAMES = [
   {
     id: "catch-standard",
-    name: "Catch Game (Standard)",
+    name: "Catch Game (Sensor & Touch)",
     icon: Monitor,
-    dbName: "Catch Database",
-  },
-  {
-    id: "catch-touch",
-    name: "Catch Game (Touch)",
-    icon: Smartphone,
     dbName: "Catch Database",
   },
   {
@@ -55,7 +49,7 @@ const GAMES = [
   },
   {
     id: "mole",
-    name: "Whac-A-Mole",
+    name: "Whac a Mole",
     icon: Gamepad2,
     dbName: "Whac-A-Mole Database",
   },
@@ -71,14 +65,10 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTable, setActiveTable] = useState("None");
   const [dbError, setDbError] = useState<string | null>(null);
-
-  // State Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const router = useRouter();
 
-  // Load data dari Supabase
   const loadData = async () => {
     setIsLoading(true);
     setDbError(null);
@@ -92,19 +82,17 @@ export default function DashboardPage() {
     } catch (err: any) {
       console.error(err);
       setDbError(
-        err?.message || "Terjadi kesalahan tidak terduga saat memuat data.",
+        err?.message || "An unexpected error occurred while loading data.",
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Trigger loadData setiap kali game atau week berubah
   useEffect(() => {
     loadData();
   }, [selectedGame, selectedWeek]);
 
-  // Reset ke halaman 1 saat game, week, atau pencarian berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedGame, selectedWeek, searchQuery]);
@@ -123,8 +111,8 @@ export default function DashboardPage() {
       entry.handphone.toLowerCase().includes(q)
     );
   });
-  const podiumWinners = filteredData.slice(0, 3);
 
+  const podiumWinners = filteredData.slice(0, 3);
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTableData = filteredData.slice(
@@ -135,12 +123,12 @@ export default function DashboardPage() {
   const formatDuration = (ms?: number) => {
     if (typeof ms === "undefined") return "-";
     const seconds = ms / 1000;
-    return `${seconds.toFixed(2)} detik`;
+    return `${seconds.toFixed(2)} seconds`;
   };
 
   const handleExportCSV = () => {
     if (filteredData.length === 0) {
-      alert("Tidak ada data untuk diekspor!");
+      alert("No data available to export!");
       return;
     }
 
@@ -151,21 +139,21 @@ export default function DashboardPage() {
     const fileName = `leaderboard-${gameLabel}-${selectedWeek}.csv`;
 
     let csvHeaders = [
-      "Peringkat",
-      "Nama Pemain",
-      "Nomor WhatsApp",
-      "Waktu Bermain (WIB)",
+      "Rank",
+      "Player Name",
+      "WhatsApp Number",
+      "Play Time (WIB)",
     ];
 
     if (selectedGame === "memory") {
       csvHeaders.push(
-        "Durasi (ms)",
-        "Durasi (detik)",
-        "Jumlah Langkah (Moves)",
-        "Level Terakhir (Stage)",
+        "Duration (ms)",
+        "Duration (seconds)",
+        "Total Moves",
+        "Last Stage (Level)",
       );
     } else {
-      csvHeaders.push("Skor");
+      csvHeaders.push("Score");
     }
 
     const csvRows = filteredData.map((row, idx) => {
@@ -190,7 +178,7 @@ export default function DashboardPage() {
       return baseRow.join(",");
     });
 
-    const csvContent = "\uFEFF" + [csvHeaders.join(","), ...csvRows].join("\n"); // Ditambahkan BOM agar Excel dapat mendeteksi UTF-8
+    const csvContent = "\uFEFF" + [csvHeaders.join(","), ...csvRows].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
@@ -212,23 +200,25 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-[#050505] overflow-y-auto pb-12 font-sans selection:bg-[#540EE1] selection:text-white">
-      {/* Background Glows */}
       <div className="fixed top-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#540EE1] rounded-full blur-[160px] opacity-[0.15] pointer-events-none z-0" />
       <div className="fixed bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#AB7FEB] rounded-full blur-[140px] opacity-[0.1] pointer-events-none z-0" />
 
-      {/* Header Bar */}
       <header className="sticky top-0 z-40 w-full py-4 px-4">
-        <div className="flex items-center justify-between px-5 py-2.5 max-w-6xl mx-auto bg-white/[0.04] border border-white/[0.08] rounded-full backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          {/* Left: Logo + Title */}
+        <div className="flex items-center justify-between px-5 py-2.5 max-w-6xl mx-auto bg-white/[0.04] border border-white/[0.08] rounded-md backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <div className="flex items-center gap-3">
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               whileHover={{ rotate: 8 }}
               transition={{ duration: 0.3 }}
-              className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#540EE1] to-[#AB7FEB] flex items-center justify-center border border-white/10 shadow-lg shadow-[#540EE1]/20 flex-shrink-0"
+              className="w-9 h-9 flex-shrink-0 overflow-hidden relative"
             >
-              <Trophy className="w-4.5 h-4.5 text-white" />
+              <Image
+                src="/mjs_logo.png"
+                alt="MJS Logo"
+                fill
+                className="object-cover"
+              />
             </motion.div>
 
             <motion.div
@@ -238,23 +228,19 @@ export default function DashboardPage() {
             >
               <h1 className="text-[15px] font-bold tracking-tight text-white/90 flex items-center gap-2">
                 MJS Leaderboard
-                <span className="text-[10px] bg-[#540EE1]/30 border border-[#AB7FEB]/25 px-2.5 py-0.5 rounded-full text-[#AB7FEB] font-semibold tracking-widest uppercase">
-                  Admin
-                </span>
               </h1>
               <p className="text-[11px] text-gray-600 font-medium">
-                Dashboard Konsolidasi Data Game
+                Game Data Consolidation Dashboard
               </p>
             </motion.div>
           </div>
 
-          {/* Right: DB indicator + Logout */}
           <div className="flex items-center gap-3">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="hidden md:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.07] text-xs text-gray-500"
+              className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-sm bg-white/[0.03] border border-white/[0.07] text-xs text-gray-500"
             >
               <Database className="w-3.5 h-3.5 text-[#AB7FEB]" />
               <span>Table:</span>
@@ -266,63 +252,55 @@ export default function DashboardPage() {
             <motion.button
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.03] hover:bg-red-500/10 border border-white/[0.07] hover:border-red-500/25 text-gray-500 hover:text-red-400 text-[11px] font-semibold uppercase tracking-widest transition-colors duration-200 cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-sm bg-white/[0.03] hover:bg-red-500/10 border border-white/[0.07] hover:border-red-500/25 text-gray-500 hover:text-red-400 text-[11px] font-semibold uppercase tracking-widest transition-colors duration-200 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Keluar
+              Logout
             </motion.button>
           </div>
         </div>
       </header>
 
-      {/* Main Dashboard Space */}
       <main className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 z-10 space-y-8">
-        {/* Supabase Error Alert Banner */}
         {dbError && (
-          <div className="glass-panel border-red-500/20 bg-red-950/20 p-5 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+          <div className="glass-panel border-red-500/20 bg-red-950/20 p-5 rounded-md flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-red-400 shrink-0 mt-0.5 animate-pulse" />
               <div>
                 <h4 className="text-sm font-bold text-red-200">
-                  Koneksi Database Gagal
+                  Database Connection Failed
                 </h4>
                 <p className="text-xs text-red-400/90 mt-1 leading-relaxed">
-                  {dbError}. Harap verifikasi apakah file{" "}
+                  {dbError}. Please check if the{" "}
                   <code className="bg-black/50 px-1 py-0.5 rounded text-white text-[11px]">
                     .env.local
                   </code>{" "}
-                  telah diisi dengan URL & Anon Key yang valid dan tabel
-                  Supabase Anda telah dibuat.
+                  file has been configured with valid credentials and the
+                  Supabase tables are ready.
                 </p>
               </div>
             </div>
             <button
               onClick={loadData}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/35 border border-red-500/20 hover:border-red-500/40 text-red-200 text-xs font-semibold transition-all duration-300 whitespace-nowrap"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-red-500/15 hover:bg-red-500/35 border border-red-500/20 hover:border-red-500/40 text-red-200 text-xs font-semibold transition-all duration-300 whitespace-nowrap"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Coba Lagi
+              <RefreshCw className="w-3.5 h-3.5" /> Try Again
             </button>
           </div>
         )}
 
-        {/* Toolbar Filter / Search */}
-        <section className="glass-panel rounded-3xl p-6 flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center">
-          {/* Filters Selectors */}
+        <section className="glass-panel rounded-md p-6 flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center">
           <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            {/* Game Selector */}
             <div className="flex-1 min-w-[200px]">
               <label className="block text-[11px] font-bold text-[#AB7FEB] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Gamepad2 className="w-3.5 h-3.5" /> Pilih Game Desktop
+                <Gamepad2 className="w-3.5 h-3.5" /> Select Desktop Game
               </label>
               <div className="relative">
                 <select
                   value={selectedGame}
                   onChange={(e) => setSelectedGame(e.target.value as GameId)}
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#540EE1] transition-all cursor-pointer appearance-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-md px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#540EE1] transition-all cursor-pointer appearance-none"
                 >
                   {GAMES.map((game) => (
                     <option
@@ -346,16 +324,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Week Selector */}
             <div className="flex-1 min-w-[200px]">
               <label className="block text-[11px] font-bold text-[#AB7FEB] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" /> Filter Rentang Minggu (WIB)
+                <Calendar className="w-3.5 h-3.5" /> Filter Week Range (WIB)
               </label>
               <div className="relative">
                 <select
                   value={selectedWeek}
                   onChange={(e) => setSelectedWeek(e.target.value as WeekKey)}
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#540EE1] transition-all cursor-pointer appearance-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-md px-4 py-3.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-[#540EE1] transition-all cursor-pointer appearance-none"
                 >
                   {Object.entries(WEEK_RANGES).map(([key, value]) => (
                     <option
@@ -380,41 +357,37 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Search & Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 items-stretch xl:items-end">
-            {/* Search Input */}
             <div className="relative min-w-[240px]">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Search className="w-3.5 h-3.5" /> Cari Pemain
+                <Search className="w-3.5 h-3.5" /> Search Player
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Nama / WhatsApp..."
+                  placeholder="Name / WhatsApp..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl pl-11 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#540EE1] transition-all"
+                  className="w-full bg-black/40 border border-white/10 rounded-md pl-11 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#540EE1] transition-all"
                 />
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               </div>
             </div>
 
-            {/* Export CSV Button */}
             <button
               onClick={handleExportCSV}
               disabled={isLoading || filteredData.length === 0}
-              className="flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-200 disabled:bg-gray-800 disabled:text-gray-500 font-bold px-6 py-3.5 rounded-2xl transition-all duration-300 shadow-md text-sm whitespace-nowrap cursor-pointer hover:shadow-white/10"
+              className="flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-200 disabled:bg-gray-800 disabled:text-gray-500 font-bold px-6 py-3.5 rounded-md transition-all duration-300 shadow-md text-sm whitespace-nowrap cursor-pointer hover:shadow-white/10"
             >
               <Download className="w-4 h-4" />
-              <span>Ekspor CSV</span>
+              <span>Export CSV</span>
             </button>
 
-            {/* Reload Button */}
             <button
               onClick={loadData}
               disabled={isLoading}
               title="Refresh Data"
-              className="flex items-center justify-center w-[48px] h-[48px] bg-white/[0.03] hover:bg-white/[0.08] disabled:bg-transparent border border-white/10 hover:border-white/20 rounded-2xl text-gray-300 hover:text-white transition-all cursor-pointer shrink-0"
+              className="flex items-center justify-center w-[48px] h-[48px] bg-white/[0.03] hover:bg-white/[0.08] disabled:bg-transparent border border-white/10 hover:border-white/20 rounded-md text-gray-300 hover:text-white transition-all cursor-pointer shrink-0"
             >
               <RefreshCw
                 className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
@@ -424,182 +397,163 @@ export default function DashboardPage() {
         </section>
 
         {isLoading ? (
-          /* Loading Skeleton */
           <div className="w-full py-20 flex flex-col items-center justify-center gap-4">
             <div className="w-12 h-12 border-4 border-[#540EE1]/20 border-t-[#AB7FEB] rounded-full animate-spin" />
             <p className="text-sm font-semibold text-[#AB7FEB]/80 animate-pulse">
-              Menghubungi Supabase & menarik data...
+              Collecting data from Supabase... Please wait a moment.
             </p>
           </div>
         ) : filteredData.length === 0 ? (
-          /* Empty State */
-          <div className="glass-panel rounded-3xl p-16 text-center max-w-xl mx-auto flex flex-col items-center gap-4">
+          <div className="glass-panel rounded-md p-16 text-center max-w-xl mx-auto flex flex-col items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center mb-2">
               <HelpCircle className="w-8 h-8 text-gray-600" />
             </div>
-            <h3 className="text-lg font-bold text-white">
-              Tidak Ada Data Leaderboard
-            </h3>
+            <h3 className="text-lg font-bold text-white">No Data Found</h3>
             <p className="text-xs text-gray-400 leading-relaxed">
-              Tidak ditemukan data bermain untuk game{" "}
+              No data found for the game{" "}
               <strong className="text-[#AB7FEB]">{activeGameInfo?.name}</strong>{" "}
-              pada periode{" "}
+              in the selected period{" "}
               <strong className="text-[#AB7FEB]">
                 {WEEK_RANGES[selectedWeek].label}
               </strong>
-              . Silakan periksa kembali rentang minggu terpilih atau database
-              Supabase Anda.
+              . Please double-check the selected.
             </p>
           </div>
         ) : (
           <>
-            {/* podium 3 besar (Hanya muncul jika ada minimal 1 data) */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-6 max-w-4xl mx-auto">
-              {/* PODIUM 2 (Left) */}
+            <section className="flex flex-row items-end justify-center gap-2 md:grid md:grid-cols-3 md:gap-6 pt-6 max-w-4xl mx-auto px-2">
               {podiumWinners[1] ? (
-                <div className="flex flex-col items-center order-2 md:order-1 mt-6">
-                  {/* Winner Card */}
-                  <div className="text-center mb-3">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-gray-400/20 to-gray-200/20 border-2 border-gray-400 flex items-center justify-center mx-auto shadow-lg relative">
-                      <span className="text-lg font-bold text-gray-300">2</span>
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-400 text-black px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wider">
+                <div className="flex flex-col items-center w-1/3 md:w-full order-2 md:order-1">
+                  <div className="text-center mb-3 w-full">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-tr from-gray-400/20 to-gray-200/20 border-2 border-gray-400 flex items-center justify-center mx-auto shadow-lg relative">
+                      <span className="text-sm md:text-lg font-bold text-gray-300">
+                        2
+                      </span>
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gray-400 text-black px-1 md:px-1.5 py-0.5 rounded-full text-[7px] md:text-[9px] font-extrabold tracking-wider">
                         SILVER
                       </div>
                     </div>
-                    <h4 className="text-sm font-bold text-white mt-3 truncate max-w-[150px] mx-auto">
+                    <h4 className="text-xs md:text-sm font-bold text-white mt-3 truncate max-w-[90px] md:max-w-[150px] mx-auto">
                       {podiumWinners[1].name}
                     </h4>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-[9px] md:text-[11px] text-gray-400 mt-0.5 truncate max-w-[90px] md:max-w-none mx-auto">
                       {podiumWinners[1].handphone}
                     </p>
-                    <p className="text-xs font-black text-[#AB7FEB] mt-1">
+                    <p className="text-[10px] md:text-xs font-black text-[#AB7FEB] mt-1">
                       {selectedGame === "memory"
                         ? formatDuration(podiumWinners[1].time_ms)
                         : `${podiumWinners[1].score} Pts`}
                     </p>
                   </div>
-                  {/* Podium Base */}
-                  <div className="w-full h-24 bg-gradient-to-b from-gray-800/40 to-gray-900/60 border border-gray-700/30 rounded-t-2xl flex items-center justify-center backdrop-blur-sm">
-                    <span className="text-4xl font-extrabold text-gray-700">
+                  <div className="w-full h-20 md:h-24 bg-gradient-to-b from-gray-800/40 to-gray-900/60 border border-gray-700/30 rounded-t-2xl flex items-center justify-center backdrop-blur-sm">
+                    <span className="text-xl md:text-4xl font-extrabold text-gray-700">
                       2nd
                     </span>
                   </div>
                 </div>
               ) : (
-                <div className="hidden md:block order-2 md:order-1" />
+                <div className="w-1/3 md:w-full order-2 md:order-1" />
               )}
 
-              {/* PODIUM 1 (Center) */}
-              {podiumWinners[0] && (
-                <div className="flex flex-col items-center order-1 md:order-2">
-                  <Crown className="w-8 h-8 text-yellow-400 animate-bounce mb-1" />
-                  {/* Winner Card */}
-                  <div className="text-center mb-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-400/20 to-amber-500/20 border-3 border-yellow-400 flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/10 relative">
-                      <span className="text-2xl font-black text-yellow-400">
+              {podiumWinners[0] ? (
+                <div className="flex flex-col items-center w-1/3 md:w-full order-1 md:order-2">
+                  <Crown className="w-6 h-6 md:w-8 md:h-8 text-yellow-400 animate-bounce mb-1" />
+                  <div className="text-center mb-4 w-full">
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-tr from-yellow-400/20 to-amber-500/20 border-3 border-yellow-400 flex items-center justify-center mx-auto shadow-2xl shadow-yellow-500/10 relative">
+                      <span className="text-xl md:text-2xl font-black text-yellow-400">
                         1
                       </span>
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider">
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-yellow-400 text-black px-1.5 md:px-2 py-0.5 rounded-full text-[7px] md:text-[9px] font-black tracking-wider">
                         CHAMP
                       </div>
                     </div>
-                    <h4 className="text-base font-extrabold text-white mt-3 truncate max-w-[180px] mx-auto">
+                    <h4 className="text-xs md:text-base font-extrabold text-white mt-3 truncate max-w-[100px] md:max-w-[180px] mx-auto">
                       {podiumWinners[0].name}
                     </h4>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 truncate max-w-[100px] md:max-w-none mx-auto">
                       {podiumWinners[0].handphone}
                     </p>
-                    <p className="text-sm font-black text-yellow-400 mt-1">
+                    <p className="text-xs md:text-sm font-black text-yellow-400 mt-1">
                       {selectedGame === "memory"
                         ? formatDuration(podiumWinners[0].time_ms)
                         : `${podiumWinners[0].score} Pts`}
                     </p>
                   </div>
-                  {/* Podium Base */}
-                  <div className="w-full h-32 bg-gradient-to-b from-[#540EE1]/20 to-[#540EE1]/5 border border-[#540EE1]/30 rounded-t-3xl flex items-center justify-center backdrop-blur-md relative overflow-hidden">
+                  <div className="w-full h-28 md:h-32 bg-gradient-to-b from-[#540EE1]/20 to-[#540EE1]/5 border border-[#540EE1]/30 rounded-t-3xl flex items-center justify-center backdrop-blur-md relative overflow-hidden">
                     <div className="absolute inset-0 bg-[#540EE1]/10 blur-xl pointer-events-none" />
-                    <span className="text-5xl font-black text-[#540EE1]">
+                    <span className="text-2xl md:text-5xl font-black text-[#540EE1]">
                       1st
                     </span>
                   </div>
                 </div>
+              ) : (
+                <div className="w-1/3 md:w-full order-1 md:order-2" />
               )}
 
-              {/* PODIUM 3 (Right) */}
               {podiumWinners[2] ? (
-                <div className="flex flex-col items-center order-3 mt-8">
-                  {/* Winner Card */}
-                  <div className="text-center mb-3">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-800/20 to-amber-600/20 border border-amber-700 flex items-center justify-center mx-auto shadow-lg relative">
-                      <span className="text-base font-bold text-amber-500">
+                <div className="flex flex-col items-center w-1/3 md:w-full order-3">
+                  <div className="text-center mb-3 w-full">
+                    <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-tr from-amber-800/20 to-amber-600/20 border border-amber-700 flex items-center justify-center mx-auto shadow-lg relative">
+                      <span className="text-xs md:text-base font-bold text-amber-500">
                         3
                       </span>
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-700 text-white px-1.5 py-0.5 rounded-full text-[8px] font-extrabold tracking-wider">
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-700 text-white px-1 md:px-1.5 py-0.5 rounded-full text-[6px] md:text-[8px] font-extrabold tracking-wider">
                         BRONZE
                       </div>
                     </div>
-                    <h4 className="text-sm font-bold text-white mt-3 truncate max-w-[140px] mx-auto">
+                    <h4 className="text-xs md:text-sm font-bold text-white mt-3 truncate max-w-[80px] md:max-w-[140px] mx-auto">
                       {podiumWinners[2].name}
                     </h4>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-[9px] md:text-[11px] text-gray-400 mt-0.5 truncate max-w-[80px] md:max-w-none mx-auto">
                       {podiumWinners[2].handphone}
                     </p>
-                    <p className="text-xs font-black text-[#AB7FEB] mt-1">
+                    <p className="text-[10px] md:text-xs font-black text-[#AB7FEB] mt-1">
                       {selectedGame === "memory"
                         ? formatDuration(podiumWinners[2].time_ms)
                         : `${podiumWinners[2].score} Pts`}
                     </p>
                   </div>
-                  {/* Podium Base */}
-                  <div className="w-full h-20 bg-gradient-to-b from-amber-950/20 to-black/60 border border-amber-900/25 rounded-t-2xl flex items-center justify-center backdrop-blur-sm">
-                    <span className="text-3xl font-extrabold text-amber-700/80">
+                  <div className="w-full h-14 md:h-20 bg-gradient-to-b from-amber-950/20 to-black/60 border border-amber-900/25 rounded-t-2xl flex items-center justify-center backdrop-blur-sm">
+                    <span className="text-lg md:text-3xl font-extrabold text-amber-700/80">
                       3rd
                     </span>
                   </div>
                 </div>
               ) : (
-                <div className="hidden md:block order-3" />
+                <div className="w-1/3 md:w-full order-3" />
               )}
             </section>
 
-            {/* Leaderboard Table Container */}
-            <section className="glass-panel rounded-3xl overflow-hidden shadow-2xl relative">
+            <section className="glass-panel rounded-md overflow-hidden shadow-2xl relative">
               <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
                 <h3 className="text-sm font-extrabold tracking-wide uppercase text-white flex items-center gap-2">
                   {activeGameIcon}
-                  <span>Daftar Peringkat ({filteredData.length} Pemain)</span>
+                  <span>
+                    Leaderboard Standings ({filteredData.length} Players)
+                  </span>
                 </h3>
-                <span className="text-xs text-gray-500 font-medium">
-                  Diurutkan berdasarkan ketentuan resmi MJS
-                </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/5 bg-white/[0.02] text-xs font-bold text-[#AB7FEB] uppercase tracking-wider">
-                      <th className="py-4.5 px-6 text-center w-24">
-                        Peringkat
-                      </th>
-                      <th className="py-4.5 px-6">Nama Pemain</th>
-                      <th className="py-4.5 px-6">No. WhatsApp</th>
+                      <th className="py-4.5 px-6 text-center w-24">Rank</th>
+                      <th className="py-4.5 px-6">Player Name</th>
+                      <th className="py-4.5 px-6">WhatsApp No.</th>
                       {selectedGame === "memory" ? (
                         <>
                           <th className="py-4.5 px-6 text-right">
-                            Durasi Main
+                            Play Duration
                           </th>
-                          <th className="py-4.5 px-6 text-center">
-                            Langkah (Moves)
-                          </th>
-                          <th className="py-4.5 px-6 text-center">
-                            Level (Stage)
-                          </th>
+                          <th className="py-4.5 px-6 text-center">Moves</th>
+                          <th className="py-4.5 px-6 text-center">Stage</th>
                         </>
                       ) : (
-                        <th className="py-4.5 px-6 text-right">Nilai Skor</th>
+                        <th className="py-4.5 px-6 text-center">Score</th>
                       )}
                       <th className="py-4.5 px-6 text-center w-64">
-                        Waktu Bermain
+                        Play Time
                       </th>
                     </tr>
                   </thead>
@@ -638,7 +592,7 @@ export default function DashboardPage() {
                         {selectedGame === "memory" ? (
                           <>
                             <td
-                              className={`py-4.5 px-6 text-right font-bold ${row.rank && row.rank <= 3 ? "text-yellow-400/90" : "text-white"}`}
+                              className={`py-4.5 px-6 text-center font-bold ${row.rank && row.rank <= 3 ? "text-yellow-400/90" : "text-white"}`}
                             >
                               {formatDuration(row.time_ms)}
                             </td>
@@ -651,7 +605,7 @@ export default function DashboardPage() {
                           </>
                         ) : (
                           <td
-                            className={`py-4.5 px-6 text-right font-bold font-mono ${row.rank && row.rank <= 3 ? "text-yellow-400/90" : "text-white"}`}
+                            className={`py-4.5 px-6 text-center font-bold font-mono ${row.rank && row.rank <= 3 ? "text-yellow-400/90" : "text-white"}`}
                           >
                             {row.score} Pts
                           </td>
@@ -666,13 +620,11 @@ export default function DashboardPage() {
                 </table>
               </div>
 
-              {/* Pagination Controls */}
               {filteredData.length > 0 && (
                 <div className="px-6 py-4.5 border-t border-white/5 bg-white/[0.01] flex flex-col sm:flex-row gap-4 items-center justify-between">
-                  {/* Left: Info items per page & entries count */}
                   <div className="flex items-center gap-4 text-xs text-gray-400 font-semibold">
                     <div className="flex items-center gap-2">
-                      <span>Baris per halaman:</span>
+                      <span>Rows per page:</span>
                       <select
                         value={itemsPerPage}
                         onChange={(e) => {
@@ -693,26 +645,23 @@ export default function DashboardPage() {
                       </select>
                     </div>
                     <span>
-                      Menampilkan{" "}
-                      {Math.min(filteredData.length, startIndex + 1)} -{" "}
+                      Showing {Math.min(filteredData.length, startIndex + 1)} -{" "}
                       {Math.min(filteredData.length, startIndex + itemsPerPage)}{" "}
-                      dari {filteredData.length} entri
+                      of {filteredData.length} entries
                     </span>
                   </div>
 
-                  {/* Right: Page Selector Buttons */}
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() =>
                         setCurrentPage((prev) => Math.max(1, prev - 1))
                       }
                       disabled={currentPage === 1}
-                      className="px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] disabled:opacity-40 disabled:hover:bg-white/[0.03] border border-white/10 disabled:cursor-not-allowed text-xs font-bold text-gray-300 transition-all cursor-pointer"
+                      className="px-3 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] disabled:opacity-40 disabled:hover:bg-white/[0.03] border border-white/10 disabled:cursor-not-allowed text-xs font-bold text-gray-300 transition-all cursor-pointer"
                     >
-                      Sebelumnya
+                      Previous
                     </button>
 
-                    {/* Render Page Numbers */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((page) => {
                         return (
@@ -733,7 +682,7 @@ export default function DashboardPage() {
                             )}
                             <button
                               onClick={() => setCurrentPage(page)}
-                              className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                              className={`w-8 h-8 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
                                 currentPage === page
                                   ? "bg-[#540EE1] text-white shadow-lg shadow-[#540EE1]/20 border border-[#AB7FEB]/30"
                                   : "bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 text-gray-400 hover:text-white"
@@ -750,9 +699,9 @@ export default function DashboardPage() {
                         setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                       }
                       disabled={currentPage === totalPages}
-                      className="px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] disabled:opacity-40 disabled:hover:bg-white/[0.03] border border-white/10 disabled:cursor-not-allowed text-xs font-bold text-gray-300 transition-all cursor-pointer"
+                      className="px-3 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] disabled:opacity-40 disabled:hover:bg-white/[0.03] border border-white/10 disabled:cursor-not-allowed text-xs font-bold text-gray-300 transition-all cursor-pointer"
                     >
-                      Berikutnya
+                      Next
                     </button>
                   </div>
                 </div>
