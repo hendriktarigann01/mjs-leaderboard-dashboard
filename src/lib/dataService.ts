@@ -13,35 +13,49 @@ export interface LeaderboardEntry {
   game_type?: string;
 }
 
-export const WEEK_RANGES = {
-  'week1': {
-    start: '2026-06-10T17:00:00.000Z',
-    end: '2026-06-21T16:59:59.999Z',
-    label: 'Week 1 (11 - 21 June 2026)'
-  },
-  'week2': {
-    start: '2026-06-21T17:00:00.000Z',
-    end: '2026-06-28T16:59:59.999Z',
-    label: 'Week 2 (22 - 28 June 2026)'
-  },
-  'week3': {
-    start: '2026-06-28T17:00:00.000Z',
-    end: '2026-07-05T16:59:59.999Z',
-    label: 'Week 3 (29 June - 5 July 2026)'
-  },
-  'week4': {
-    start: '2026-07-05T17:00:00.000Z',
-    end: '2026-07-12T16:59:59.999Z',
-    label: 'Week 4 (6 - 12 July 2026)'
-  },
-  'all': {
-    start: null,
-    end: null,
-    label: 'All Time'
-  }
-};
+export type GameId = 'catch-standard' | 'memory' | 'scream' | 'mole';
 
-export type WeekKey = keyof typeof WEEK_RANGES;
+export const GAMES = [
+  {
+    id: "mole" as GameId,
+    name: "Whac a Mole",
+    dbName: "Whac-A-Mole Database",
+    licenseGameId: "Whac-A-Mole"
+  },
+  {
+    id: "catch-standard" as GameId,
+    name: "Catch Game (Sensor & Touch)",
+    dbName: "Catch Database",
+    licenseGameId: "Catch"
+  },
+  {
+    id: "memory" as GameId,
+    name: "Memory Card",
+    dbName: "Memory Card Database",
+    licenseGameId: "Memory"
+  },
+  {
+    id: "scream" as GameId,
+    name: "Scream Challenge",
+    dbName: "Scream Database",
+    licenseGameId: "Scream"
+  }
+] as const;
+
+export function mapGameIdToLicenseGame(gameId: GameId): string {
+  switch (gameId) {
+    case 'mole':
+      return 'Whac-A-Mole';
+    case 'catch-standard':
+      return 'Catch';
+    case 'memory':
+      return 'Memory';
+    case 'scream':
+      return 'Scream';
+    default:
+      return 'Whac-A-Mole';
+  }
+}
 
 export function formatToWIB(dateString: string): string {
   try {
@@ -72,8 +86,11 @@ async function querySupabaseTable(supabaseClient: any, possibleTables: string[],
     try {
       let query = supabaseClient.from(tableName).select('*');
       
-      if (start && end) {
-        query = query.gte('created_at', start).lte('created_at', end);
+      if (start) {
+        query = query.gte('created_at', start);
+      }
+      if (end) {
+        query = query.lte('created_at', end);
       }
       
       const { data, error } = await query;
@@ -91,14 +108,15 @@ async function querySupabaseTable(supabaseClient: any, possibleTables: string[],
 }
 
 export async function fetchLeaderboardData(
-  game: 'catch-standard' | 'catch-touch' | 'memory' | 'scream' | 'mole',
-  week: WeekKey
+  game: GameId,
+  startDate?: string | null,
+  endDate?: string | null
 ): Promise<{ data: LeaderboardEntry[]; activeTable: string; error?: string }> {
   
   let client: any;
   const tables = ['leaderboard', 'scores', 'player_scores', 'game_scores', 'users', 'players'];
   
-  if (game === 'catch-standard' || game === 'catch-touch') {
+  if (game === 'catch-standard') {
     client = supabaseCatch;
   } else if (game === 'memory') {
     client = supabaseMemory;
@@ -108,10 +126,11 @@ export async function fetchLeaderboardData(
     client = supabaseMole;
   }
 
-  const range = WEEK_RANGES[week];
+  const startISO = startDate ? new Date(`${startDate}T00:00:00.000Z`).toISOString() : null;
+  const endISO = endDate ? new Date(`${endDate}T23:59:59.999Z`).toISOString() : null;
   
   try {
-    const { data: rawData, tableName } = await querySupabaseTable(client, tables, range.start, range.end);
+    const { data: rawData, tableName } = await querySupabaseTable(client, tables, startISO, endISO);
     
     let normalizedData: LeaderboardEntry[] = rawData.map((item: any) => {
       const name = item.player_name || item.name || item.username || item.player_id || 'Unknown Player';
@@ -138,18 +157,13 @@ export async function fetchLeaderboardData(
       return entry;
     });
 
-    if (game === 'catch-standard' || game === 'catch-touch') {
-      const isTouchRequested = game === 'catch-touch';
+    if (game === 'catch-standard') {
       const hasGameTypeMarkers = normalizedData.some(d => d.game_type && d.game_type.trim().length > 0);
       
       if (hasGameTypeMarkers) {
         normalizedData = normalizedData.filter(d => {
           const typeLower = (d.game_type || '').toLowerCase();
-          if (isTouchRequested) {
-            return typeLower.includes('touch') || typeLower.includes('mobile') || typeLower.includes('tablet');
-          } else {
-            return typeLower.includes('standard') || typeLower.includes('desktop') || typeLower.includes('pc') || !typeLower.includes('touch');
-          }
+          return typeLower.includes('standard') || typeLower.includes('desktop') || typeLower.includes('pc') || !typeLower.includes('touch');
         });
       }
     }
